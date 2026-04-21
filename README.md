@@ -1,9 +1,8 @@
-# Hydrogen template: Skeleton
+# Harrab Hydrogen storefront
 
-Hydrogen is Shopify’s stack for headless commerce. Hydrogen is designed to dovetail with [Remix](https://remix.run/), Shopify’s full stack web framework. This template contains a **minimal setup** of components, queries and tooling to get started with Hydrogen.
+This is a standalone Shopify Hydrogen storefront for Harrab, a dark martial arts clothing brand.
 
-[Check out Hydrogen docs](https://shopify.dev/custom-storefronts/hydrogen)
-[Get familiar with Remix](https://remix.run/docs/en/v1)
+The homepage uses a pinned mock.shop product snapshot in `app/routes/_index.tsx`. Live mock.shop queries through MiniOxygen were unstable in this Replit environment, so the snapshot keeps local development reliable without requiring real Shopify credentials. Root header and footer data fall back locally for `mock.shop` and switch to live Storefront API queries when a real store domain is configured.
 
 ## What's included
 
