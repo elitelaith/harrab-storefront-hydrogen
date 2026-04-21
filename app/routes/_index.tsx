@@ -67,12 +67,12 @@ export const meta: Route.MetaFunction = () => {
   ];
 };
 
-export async function loader() {
+export async function loader(args: Route.LoaderArgs) {
   // Start fetching non-critical data without blocking time to first byte
   const deferredData = loadDeferredData();
 
   // Await the critical data required to render initial state of the page
-  const criticalData = await loadCriticalData();
+  const criticalData = await loadCriticalData(args);
 
   return {...deferredData, ...criticalData};
 }
@@ -81,10 +81,24 @@ export async function loader() {
  * Load data necessary for rendering content above the fold. This is the critical data
  * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
  */
-async function loadCriticalData() {
+async function loadCriticalData({context}: Route.LoaderArgs) {
+  const liveStorefront = shouldUseLiveStorefront(context.env.PUBLIC_STORE_DOMAIN);
+
   return {
-    recommendedProducts: MOCK_RECOMMENDED_PRODUCTS,
+    recommendedProducts: liveStorefront
+      ? await (context.storefront.query(HARRAB_PRODUCTS_QUERY, {
+          cache: context.storefront.CacheShort(),
+          variables: {
+            country: context.storefront.i18n.country,
+            language: context.storefront.i18n.language,
+          },
+        }) as Promise<HarrabProducts>).catch(() => MOCK_RECOMMENDED_PRODUCTS)
+      : MOCK_RECOMMENDED_PRODUCTS,
   };
+}
+
+function shouldUseLiveStorefront(storeDomain?: string) {
+  return Boolean(storeDomain && storeDomain !== 'mock.shop');
 }
 
 /**
@@ -423,3 +437,62 @@ const MOCK_COLLECTIONS = {
     ],
   },
 };
+
+const HARRAB_PRODUCTS_QUERY = `#graphql
+  query HarrabProducts($country: CountryCode, $language: LanguageCode)
+    @inContext(country: $country, language: $language) {
+    products(first: 3, sortKey: UPDATED_AT, reverse: true) {
+      nodes {
+        id
+        title
+        handle
+        variants(first: 1) {
+          nodes {
+            id
+            availableForSale
+            image {
+              __typename
+              id
+              url
+              altText
+              width
+              height
+            }
+            price {
+              amount
+              currencyCode
+            }
+            product {
+              title
+              handle
+            }
+            selectedOptions {
+              name
+              value
+            }
+            sku
+            title
+            unitPrice {
+              amount
+              currencyCode
+            }
+          }
+        }
+        priceRange {
+          minVariantPrice {
+            amount
+            currencyCode
+          }
+        }
+        featuredImage {
+          __typename
+          id
+          url
+          altText
+          width
+          height
+        }
+      }
+    }
+  }
+` as const;

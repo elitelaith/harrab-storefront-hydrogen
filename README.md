@@ -39,6 +39,14 @@ npm run build
 npm run dev
 ```
 
+## Manual QA checklist
+
+- Open the homepage and confirm the large animated HARRAB hero appears.
+- Confirm the featured products render as a three-column grid on desktop.
+- Hover a product card and confirm it lifts with a red glow.
+- Hover the marquee and confirm the scrolling text pauses.
+- Click Add to cart and confirm the cart drawer opens from the right.
+
 ## Setup for using Customer Account API (`/account` section)
 
 Follow step 1 and 2 of <https://shopify.dev/docs/custom-storefronts/building-with-the-customer-account-api/hydrogen#step-1-set-up-a-public-domain-for-local-development>
