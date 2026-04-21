@@ -3,7 +3,56 @@ import type {Route} from './+types/_index';
 import {Suspense} from 'react';
 import {Image, Money} from '@shopify/hydrogen';
 import {motion} from 'framer-motion';
-import type {RecommendedProductsQuery} from 'storefrontapi.generated';
+type HarrabMoney = {
+  amount: string;
+  currencyCode: 'CAD';
+};
+
+type HarrabImage = {
+  __typename?: 'Image';
+  id: string;
+  url: string;
+  altText: string | null;
+  width: number;
+  height: number;
+};
+
+type HarrabVariant = {
+  id: string;
+  availableForSale: boolean;
+  image: HarrabImage;
+  price: HarrabMoney;
+  product: {
+    title: string;
+    handle: string;
+  };
+  selectedOptions: Array<{
+    name: string;
+    value: string;
+  }>;
+  sku: string | null;
+  title: string;
+  unitPrice: HarrabMoney | null;
+};
+
+type HarrabProduct = {
+  id: string;
+  title: string;
+  handle: string;
+  variants: {
+    nodes: HarrabVariant[];
+  };
+  priceRange: {
+    minVariantPrice: HarrabMoney;
+  };
+  featuredImage: HarrabImage;
+};
+
+type HarrabProducts = {
+  products: {
+    nodes: HarrabProduct[];
+  };
+};
 import {AddToCartButton} from '~/components/AddToCartButton';
 import {useAside} from '~/components/Aside';
 
@@ -126,7 +175,7 @@ function Hero() {
 function RecommendedProducts({
   products,
 }: {
-  products: RecommendedProductsQuery | null;
+  products: HarrabProducts | null;
 }) {
   const nodes = products?.products.nodes ?? [];
 
@@ -149,7 +198,7 @@ function HarrabProductCard({
   product,
   index,
 }: {
-  product: RecommendedProductsQuery['products']['nodes'][number];
+  product: HarrabProduct;
   index: number;
 }) {
   const image = product.featuredImage;
@@ -363,7 +412,7 @@ const MOCK_RECOMMENDED_PRODUCTS = {
       },
     ],
   },
-} as unknown as RecommendedProductsQuery;
+} satisfies HarrabProducts;
 
 const MOCK_COLLECTIONS = {
   collections: {

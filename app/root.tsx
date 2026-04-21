@@ -17,7 +17,7 @@ import resetStyles from '~/styles/reset.css?url';
 import appStyles from '~/styles/app.css?url';
 import tailwindCss from './styles/tailwind.css?url';
 import {PageLayout} from './components/PageLayout';
-import type {HeaderQuery} from 'storefrontapi.generated';
+import type {FooterQuery, HeaderQuery} from 'storefrontapi.generated';
 
 export type RootLoader = typeof loader;
 
@@ -102,7 +102,17 @@ export async function loader(args: Route.LoaderArgs) {
  * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
  */
 async function loadCriticalData({context}: Route.LoaderArgs) {
-  const [header] = await Promise.all([createFallbackHeader()]);
+  const liveStorefront = shouldUseLiveStorefront(context.env.PUBLIC_STORE_DOMAIN);
+  const [header] = await Promise.all([
+    liveStorefront
+      ? (context.storefront.query(HEADER_QUERY, {
+          cache: context.storefront.CacheLong(),
+          variables: {
+            headerMenuHandle: 'main-menu',
+          },
+        }) as Promise<HeaderQuery>).catch(() => createFallbackHeader())
+      : createFallbackHeader(),
+  ]);
 
   return {header};
 }
@@ -113,11 +123,25 @@ async function loadCriticalData({context}: Route.LoaderArgs) {
  * Make sure to not throw any errors here, as it will cause the page to 500.
  */
 function loadDeferredData({context}: Route.LoaderArgs) {
+  const liveStorefront = shouldUseLiveStorefront(context.env.PUBLIC_STORE_DOMAIN);
+  const footer = liveStorefront
+    ? (context.storefront.query(FOOTER_QUERY, {
+        cache: context.storefront.CacheLong(),
+        variables: {
+          footerMenuHandle: 'footer',
+        },
+      }) as Promise<FooterQuery>).catch(() => createFallbackFooter())
+    : Promise.resolve(createFallbackFooter());
+
   return {
-    cart: Promise.resolve(null),
-    isLoggedIn: Promise.resolve(false),
-    footer: Promise.resolve(null),
+    cart: context.cart.get().catch(() => null),
+    isLoggedIn: context.customerAccount.isLoggedIn().catch(() => false),
+    footer,
   };
+}
+
+function shouldUseLiveStorefront(storeDomain?: string) {
+  return Boolean(storeDomain && storeDomain !== 'mock.shop');
 }
 
 function createFallbackHeader(): HeaderQuery {
@@ -134,6 +158,43 @@ function createFallbackHeader(): HeaderQuery {
       },
     },
     menu: null,
+  };
+}
+
+function createFallbackFooter(): FooterQuery {
+  return {
+    menu: {
+      id: 'gid://shopify/Menu/harrab-footer',
+      items: [
+        {
+          id: 'gid://shopify/MenuItem/harrab-training',
+          resourceId: null,
+          tags: [],
+          title: 'Training',
+          type: 'HTTP',
+          url: '/collections/training',
+          items: [],
+        },
+        {
+          id: 'gid://shopify/MenuItem/harrab-recovery',
+          resourceId: null,
+          tags: [],
+          title: 'Recovery',
+          type: 'HTTP',
+          url: '/collections/recovery',
+          items: [],
+        },
+        {
+          id: 'gid://shopify/MenuItem/harrab-no-retreat',
+          resourceId: null,
+          tags: [],
+          title: 'No Retreat',
+          type: 'HTTP',
+          url: '/collections/no-retreat',
+          items: [],
+        },
+      ],
+    },
   };
 }
 
