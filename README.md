@@ -21,7 +21,7 @@ The homepage uses a pinned mock.shop product snapshot in `app/routes/_index.tsx`
 
 **Requirements:**
 
-- Node.js version 18.0.0 or higher
+- Node.js version 22 or 24
 
 ```bash
 npm create @shopify/hydrogen@latest
