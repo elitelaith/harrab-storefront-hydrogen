@@ -1,6 +1,6 @@
 import {Await, Link, useLoaderData} from 'react-router';
 import type {Route} from './+types/_index';
-import {Suspense} from 'react';
+import {Suspense, useEffect, useState} from 'react';
 import {Image, Money} from '@shopify/hydrogen';
 import {motion} from 'framer-motion';
 type HarrabMoney = {
@@ -94,6 +94,7 @@ async function loadCriticalData({context}: Route.LoaderArgs) {
           },
         }) as Promise<HarrabProducts>).catch(() => MOCK_RECOMMENDED_PRODUCTS)
       : MOCK_RECOMMENDED_PRODUCTS,
+    refreshFromMockShop: !liveStorefront,
   };
 }
 
@@ -117,7 +118,10 @@ export default function Homepage() {
   return (
     <div className="harrab-home">
       <Hero />
-      <RecommendedProducts products={data.recommendedProducts} />
+      <RecommendedProducts
+        products={data.recommendedProducts}
+        refreshFromMockShop={data.refreshFromMockShop}
+      />
       <TrainingStatement />
       <CollectionsStrip collections={data.collections} />
       <Marquee />
@@ -188,10 +192,39 @@ function Hero() {
 
 function RecommendedProducts({
   products,
+  refreshFromMockShop,
 }: {
   products: HarrabProducts | null;
+  refreshFromMockShop: boolean;
 }) {
-  const nodes = products?.products.nodes ?? [];
+  const [runtimeProducts, setRuntimeProducts] = useState(products);
+
+  useEffect(() => {
+    if (!refreshFromMockShop) return;
+
+    let mounted = true;
+
+    fetch('https://mock.shop/api/2026-04/graphql.json', {
+      method: 'POST',
+      headers: {'content-type': 'application/json'},
+      body: JSON.stringify({query: HARRAB_PRODUCTS_QUERY}),
+    })
+      .then(async (response) =>
+        response.ok ? ((await response.json()) as {data?: HarrabProducts}) : null,
+      )
+      .then((payload) => {
+        if (mounted && payload?.data?.products?.nodes?.length) {
+          setRuntimeProducts(payload.data);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      mounted = false;
+    };
+  }, [refreshFromMockShop]);
+
+  const nodes = runtimeProducts?.products.nodes ?? [];
 
   return (
     <section className="harrab-products" aria-labelledby="harrab-products">
