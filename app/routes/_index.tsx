@@ -92,7 +92,9 @@ async function loadCriticalData({context}: Route.LoaderArgs) {
             country: context.storefront.i18n.country,
             language: context.storefront.i18n.language,
           },
-        }) as Promise<HarrabProducts>).catch(() => MOCK_RECOMMENDED_PRODUCTS)
+        }) as Promise<HarrabProducts>).catch((error) =>
+          useProductFallback('Live product query failed', error),
+        )
       : MOCK_RECOMMENDED_PRODUCTS,
     refreshFromMockShop: !liveStorefront,
   };
@@ -100,6 +102,11 @@ async function loadCriticalData({context}: Route.LoaderArgs) {
 
 function shouldUseLiveStorefront(storeDomain?: string) {
   return Boolean(storeDomain && storeDomain !== 'mock.shop');
+}
+
+function useProductFallback(message: string, error: unknown) {
+  console.warn(`[Harrab] ${message}; using snapshot fallback.`, error);
+  return MOCK_RECOMMENDED_PRODUCTS;
 }
 
 /**
@@ -217,7 +224,9 @@ function RecommendedProducts({
           setRuntimeProducts(payload.data);
         }
       })
-      .catch(() => {});
+      .catch((error) => {
+        console.warn('[Harrab] Browser mock.shop refresh failed; using snapshot.', error);
+      });
 
     return () => {
       mounted = false;

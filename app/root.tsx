@@ -110,7 +110,9 @@ async function loadCriticalData({context}: Route.LoaderArgs) {
           variables: {
             headerMenuHandle: 'main-menu',
           },
-        }) as Promise<HeaderQuery>).catch(() => createFallbackHeader())
+        }) as Promise<HeaderQuery>).catch((error) =>
+          useFallback('Header query failed', createFallbackHeader(), error),
+        )
       : createFallbackHeader(),
   ]);
 
@@ -130,18 +132,29 @@ function loadDeferredData({context}: Route.LoaderArgs) {
         variables: {
           footerMenuHandle: 'footer',
         },
-      }) as Promise<FooterQuery>).catch(() => createFallbackFooter())
+      }) as Promise<FooterQuery>).catch((error) =>
+        useFallback('Footer query failed', createFallbackFooter(), error),
+      )
     : Promise.resolve(createFallbackFooter());
 
   return {
-    cart: context.cart.get().catch(() => null),
-    isLoggedIn: context.customerAccount.isLoggedIn().catch(() => false),
+    cart: context.cart
+      .get()
+      .catch((error) => useFallback('Cart query failed', null, error)),
+    isLoggedIn: context.customerAccount
+      .isLoggedIn()
+      .catch((error) => useFallback('Customer status query failed', false, error)),
     footer,
   };
 }
 
 function shouldUseLiveStorefront(storeDomain?: string) {
   return Boolean(storeDomain && storeDomain !== 'mock.shop');
+}
+
+function useFallback<T>(message: string, fallback: T, error: unknown) {
+  console.warn(`[Harrab] ${message}; using fallback.`, error);
+  return fallback;
 }
 
 function createFallbackHeader(): HeaderQuery {
