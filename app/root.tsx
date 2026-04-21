@@ -1,4 +1,3 @@
-import {useNonce} from '@shopify/hydrogen';
 import {
   Outlet,
   useRouteError,
@@ -212,8 +211,6 @@ function createFallbackFooter(): FooterQuery {
 }
 
 export function Layout({children}: {children?: React.ReactNode}) {
-  const nonce = useNonce();
-
   return (
     <html lang="en">
       <head>
@@ -227,8 +224,8 @@ export function Layout({children}: {children?: React.ReactNode}) {
       </head>
       <body>
         {children}
-        <ScrollRestoration nonce={nonce} />
-        <Scripts nonce={nonce} />
+        <ScrollRestoration />
+        <Scripts />
       </body>
     </html>
   );
