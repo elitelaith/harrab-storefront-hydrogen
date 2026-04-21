@@ -1,9 +1,13 @@
 import type {Route} from './+types/collections.all';
 import {useLoaderData} from 'react-router';
-import {getPaginationVariables, Image, Money} from '@shopify/hydrogen';
+import {getPaginationVariables} from '@shopify/hydrogen';
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
 import {ProductItem} from '~/components/ProductItem';
 import type {CollectionItemFragment} from 'storefrontapi.generated';
+import {
+  createMockProductsConnection,
+  shouldUseLiveStorefront,
+} from '~/lib/harrabMockProducts';
 
 export const meta: Route.MetaFunction = () => {
   return [{title: `Hydrogen | Products`}];
@@ -29,12 +33,19 @@ async function loadCriticalData({context, request}: Route.LoaderArgs) {
     pageBy: 8,
   });
 
-  const [{products}] = await Promise.all([
-    storefront.query(CATALOG_QUERY, {
+  if (!shouldUseLiveStorefront(context.env.PUBLIC_STORE_DOMAIN)) {
+    return {products: createMockProductsConnection()};
+  }
+
+  const {products} = await storefront
+    .query(CATALOG_QUERY, {
       variables: {...paginationVariables},
-    }),
-    // Add other queries here, so that they are loaded in parallel
-  ]);
+    })
+    .catch((error) => {
+      console.warn('[Harrab] Catalog query failed; using snapshot fallback.', error);
+      return {products: createMockProductsConnection()};
+    });
+
   return {products};
 }
 

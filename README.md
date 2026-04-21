@@ -4,6 +4,8 @@ This is a standalone Shopify Hydrogen storefront for Harrab, a dark martial arts
 
 The homepage uses a pinned mock.shop product snapshot in `app/routes/_index.tsx`. Live mock.shop queries through MiniOxygen were unstable in this Replit environment, so the snapshot keeps local development reliable without requiring real Shopify credentials. Root header and footer data fall back locally for `mock.shop` and switch to live Storefront API queries when a real store domain is configured.
 
+For local Replit preview stability, the server omits Hydrogen's generated strict CSP header. This avoids nonce hydration crashes seen in the proxied preview. Restore strict CSP nonce propagation before production hardening.
+
 ## What's included
 
 - Remix

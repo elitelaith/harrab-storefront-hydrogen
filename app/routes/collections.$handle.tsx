@@ -5,6 +5,10 @@ import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 import {ProductItem} from '~/components/ProductItem';
 import type {ProductItemFragment} from 'storefrontapi.generated';
+import {
+  createMockCollection,
+  shouldUseLiveStorefront,
+} from '~/lib/harrabMockProducts';
 
 export const meta: Route.MetaFunction = ({data}) => {
   return [{title: `Hydrogen | ${data?.collection.title ?? ''} Collection`}];
@@ -35,12 +39,20 @@ async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
     throw redirect('/collections');
   }
 
-  const [{collection}] = await Promise.all([
-    storefront.query(COLLECTION_QUERY, {
+  if (!shouldUseLiveStorefront(context.env.PUBLIC_STORE_DOMAIN)) {
+    return {
+      collection: createMockCollection(handle),
+    };
+  }
+
+  const {collection} = await storefront
+    .query(COLLECTION_QUERY, {
       variables: {handle, ...paginationVariables},
-      // Add other queries here, so that they are loaded in parallel
-    }),
-  ]);
+    })
+    .catch((error) => {
+      console.warn('[Harrab] Collection query failed; using snapshot fallback.', error);
+      return {collection: createMockCollection(handle)};
+    });
 
   if (!collection) {
     throw new Response(`Collection ${handle} not found`, {
